@@ -13,7 +13,7 @@ struct ObjectParser: JsonParser {
         var reader = try self.prepareForReading(withReader: r)
         
         //detect opening brace
-        guard reader.curr() == Const.BeginObject else {
+        guard try reader.curr() == Const.BeginObject else {
             throw Error.UnexpectedCharacter(reader)
         }
         try reader.nextAndCheckNotDone()
@@ -22,7 +22,7 @@ struct ObjectParser: JsonParser {
         reader = try self.prepareForReading(withReader: reader)
 
         //check curr value for closing bracket, to handle empty object
-        if reader.curr() == Const.EndObject {
+        if try reader.curr() == Const.EndObject {
             //empty object
             reader.next()
             return (JsonValue.Object([:]), reader)
@@ -43,7 +43,7 @@ struct ObjectParser: JsonParser {
             
             //scan for name separator :
             reader = try self.prepareForReading(withReader: reader)
-            guard reader.curr() == Const.NameSeparator else {
+            guard try reader.curr() == Const.NameSeparator else {
                 throw Error.ObjectNameSeparatorMissing(reader)
             }
             try reader.nextAndCheckNotDone()
@@ -59,7 +59,7 @@ struct ObjectParser: JsonParser {
             //scan for either a comma, in which case there must be another
             //value OR for a closing brace
             reader = try self.prepareForReading(withReader: reader)
-            switch reader.curr() {
+            switch try reader.curr() {
             case Const.EndObject:
                 reader.next()
                 let exported = self.exportArray(pairs)

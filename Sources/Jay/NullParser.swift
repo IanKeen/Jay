@@ -13,7 +13,7 @@ struct NullParser: JsonParser {
         var reader = try self.prepareForReading(withReader: r)
         
         //try to read the "null" literal, throw if anything goes wrong
-        try reader.stopAtFirstDifference(ByteReader(content: Const.Null))
+        try reader.stopAtFirstDifference(ByteReader(content: Const.Null, opts: reader.opts))
         return (JsonValue.Null, reader)
     }
 }

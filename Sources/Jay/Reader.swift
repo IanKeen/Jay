@@ -8,8 +8,10 @@
 
 protocol Reader {
     
+    var opts: JayOpts { get }
+    
     // Returns the currently pointed-at char
-    func curr() -> JChar
+    func curr() throws -> JChar
 
     // Moves cursor to the next char
     mutating func next()
@@ -28,10 +30,14 @@ extension Reader {
         try self.ensureNotDone()
         var buff = [JChar]()
         while buff.count < next {
-            buff.append(self.curr())
+            buff.append(try self.curr())
             try self.nextAndCheckNotDone()
         }
         return buff
+    }
+    
+    func isDoneAndFragmentsAllowed() -> Bool {
+        return self.isDone() && self.opts.allowFragments
     }
     
     func ensureNotDone() throws {
@@ -45,11 +51,17 @@ extension Reader {
         try self.ensureNotDone()
     }
     
+    mutating func nextAndCheckNotDoneIfFragmentsDisallowed() throws {
+        self.next()
+        if self.opts.allowFragments { return }
+        try self.ensureNotDone()
+    }
+    
     // Consumes all contiguous whitespace and returns # of consumed chars
     mutating func consumeWhitespace() -> Int {
         var counter = 0
         while !self.isDone() {
-            let char = self.curr()
+            let char = try! self.curr()
             if Const.Whitespace.contains(char) {
                 //consume
                 counter += 1
@@ -82,8 +94,8 @@ extension Reader {
                 throw Error.Mismatch(self, other)
             }
 
-            let charSelf = self.curr()
-            let charOther = other.curr()
+            let charSelf = try! self.curr()
+            let charOther = try! other.curr()
             guard charSelf == charOther else {
                 //c) no match
                 throw Error.Mismatch(self, other)

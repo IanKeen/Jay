@@ -10,10 +10,12 @@ struct ByteReader: Reader {
     
     private let content: [JChar]
     private var cursor: Array<JChar>.Index
+    let opts: JayOpts
     
-    init(content: [JChar]) {
+    init(content: [JChar], opts: JayOpts) {
         self.content = content
         self.cursor = self.content.startIndex
+        self.opts = opts
     }
     
     mutating func next() {
@@ -28,8 +30,8 @@ struct ByteReader: Reader {
         return Array(self.content[range])
     }
     
-    func curr() -> JChar {
-        precondition(!self.isDone())
+    func curr() throws -> JChar {
+        guard !self.isDone() else { throw Error.UnexpectedEnd(self) }
         return self.content[self.cursor]
     }
     
@@ -37,7 +39,7 @@ struct ByteReader: Reader {
         return self.cursor == self.content.endIndex
     }
     
-    init(content: String) {
-        self.init(content: content.chars())
+    init(content: String, opts: JayOpts = JayOpts()) {
+        self.init(content: content.chars(), opts: opts)
     }
 }

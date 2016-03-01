@@ -80,7 +80,7 @@ class ParsingTests:XCTestCase {
     
     func testExtraTokensThrow() {
         let data = "{\"hello\":\"world\"} blah".chars()
-        let ret = try? Parser().parseJsonFromData(data)
+        let ret = try? Parser(JayOpts()).parseJsonFromData(data)
         XCTAssertNil(ret)
     }
     
@@ -89,7 +89,7 @@ class ParsingTests:XCTestCase {
         let reader = ByteReader(content: "null,   heyo")
         let ret = try! ValueParser().parse(withReader: reader)
         ensureNull(ret.0)
-        XCTAssert(ret.1.curr() == ",".char())
+        XCTAssert(try ret.1.curr() == ",".char())
     }
     
     func testNull_Mismatch() {
@@ -104,7 +104,7 @@ class ParsingTests:XCTestCase {
         let reader = ByteReader(content: "true, ")
         let ret = try! ValueParser().parse(withReader: reader)
         ensureBool(ret.0, exp: JsonBoolean.True)
-        XCTAssert(ret.1.curr() == ",".char())
+        XCTAssert(try ret.1.curr() == ",".char())
     }
 
     func testBoolean_True_Mismatch() {
@@ -119,7 +119,7 @@ class ParsingTests:XCTestCase {
         let reader = ByteReader(content: "false, ")
         let ret = try! ValueParser().parse(withReader: reader)
         ensureBool(ret.0, exp: JsonBoolean.False)
-        XCTAssert(ret.1.curr() == ",".char())
+        XCTAssert(try ret.1.curr() == ",".char())
     }
     
     func testBoolean_False_Mismatch() {
@@ -132,7 +132,7 @@ class ParsingTests:XCTestCase {
     func testArray_NullsBoolsNums_Normal_Minimal_RootParser() {
         
         let reader = ByteReader(content: "[null,true,false,12,-24.3,18.2e9]")
-        let ret = try! RootParser().parse(withReader: reader)
+        let ret = try! RootParser(JayOpts()).parse(withReader: reader)
         let exp: JsonArray = [
             JsonValue.Null,
             JsonValue.Boolean(JsonBoolean.True),
@@ -156,7 +156,7 @@ class ParsingTests:XCTestCase {
             JsonValue.Boolean(JsonBoolean.False)
         ]
         ensureArray(ret.0, exp: exp)
-        XCTAssert(ret.1.curr() == "\n".char())
+        XCTAssert(try ret.1.curr() == "\n".char())
     }
     
     func testArray_NullsAndBooleans_Bad_MissingEnd() {
@@ -327,7 +327,7 @@ class ParsingTests:XCTestCase {
             Const.Space
         ]
         
-        var reader: Reader = ByteReader(content: chars)
+        var reader: Reader = ByteReader(content: chars, opts: JayOpts())
         var char: UnicodeScalar
         
         //regular
@@ -442,12 +442,12 @@ class ParsingTests:XCTestCase {
         let reader = ByteReader(content: "{}")
         let ret = try! ValueParser().parse(withReader: reader)
         let exp: JsonObject = [:]
-        ensureObject(ret.0, exp: exp)
+        ensureObject(ret.0, exp)
     }
     
     func testObject_Example1() {
         let data = "{\t\"hello\" : \"wor🇨🇿ld\", \n\t \"val\": 1234, \"many\": [\n-12.32, null, \"yo\"\r], \"emptyDict\": {}, \"dict\": {\"arr\":[]}, \"name\": true}".chars()
-        let reader = ByteReader(content: data)
+        let reader = ByteReader(content: data, opts: JayOpts())
         let ret = try! ValueParser().parse(withReader: reader)
         let exp: JsonObject = [
             "hello": JsonValue.String("wor🇨🇿ld"),
@@ -463,7 +463,7 @@ class ParsingTests:XCTestCase {
                 ]),
             "name": JsonValue.Boolean(.True)
         ]
-        ensureObject(ret.0, exp: exp)
+        ensureObject(ret.0, exp)
     }
     
     func testNative_Example1() {
@@ -489,5 +489,18 @@ class ParsingTests:XCTestCase {
         XCTAssertEqual(expStr, retStr)
     }
 
+    func testOpts_FragmentsAllowed_ObjectPassed() {
+        let data = "{ \"hello\" : \"world\" }".chars()
+        let ret = try! Jay(JayOpts(allowFragments: true)).typesafeJsonFromData(data)
+        let exp: JsonObject = ["hello":JsonValue.String("world")]
+        ensureObject(ret, exp)
+    }
     
+    func testOpts_FragmentsAllowed_FragmentPassed() {
+        let data = "\"hello\"".chars()
+        let ret = try! Jay(JayOpts(allowFragments: true)).typesafeJsonFromData(data)
+        let exp: JsonObject = ["hello":JsonValue.String("world")]
+        ensureObject(ret, exp)
+    }
+
 }

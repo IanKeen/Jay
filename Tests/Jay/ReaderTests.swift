@@ -37,7 +37,7 @@ class ReaderTests: XCTestCase {
         var reader = ByteReader(content: " \n  \t \r  lala ")
         let consumed = reader.consumeWhitespace()
         XCTAssertEqual(consumed, 9)
-        XCTAssert(reader.curr() == "l".char())
+        XCTAssert(try reader.curr() == "l".char())
     }
     
     func testConsumingWhitespace_NoWhitespace() {
@@ -45,7 +45,7 @@ class ReaderTests: XCTestCase {
         var reader = ByteReader(content: "lala ")
         let consumed = reader.consumeWhitespace()
         XCTAssertEqual(consumed, 0)
-        XCTAssert(reader.curr() == "l".char())
+        XCTAssert(try reader.curr() == "l".char())
     }
     
     func testConsumingWhitespace_Empty() {
@@ -68,8 +68,8 @@ class ReaderTests: XCTestCase {
             
             XCTAssert(!main.isDone())
             XCTAssert(!other.isDone())
-            XCTAssert(main.curr() == "l".char())
-            XCTAssert(other.curr() == "a".char())
+            XCTAssert(try main.curr() == "l".char())
+            XCTAssert(try other.curr() == "a".char())
         } catch {
             XCTFail()
         }
@@ -86,7 +86,7 @@ class ReaderTests: XCTestCase {
         } catch Error.Mismatch(let main, let other) {
             XCTAssert(main.isDone())
             XCTAssert(!other.isDone())
-            XCTAssert(other.curr() == "h".char())
+            XCTAssert(try other.curr() == "h".char())
         } catch {
             XCTFail()
         }
@@ -112,7 +112,7 @@ class ReaderTests: XCTestCase {
         do {
             try mainReader.stopAtFirstDifference(expectedReader)
             XCTAssert(!mainReader.isDone())
-            XCTAssert(mainReader.curr() == "o".char())
+            XCTAssert(try mainReader.curr() == "o".char())
         } catch {
             XCTFail()
         }
@@ -145,7 +145,7 @@ class ReaderTests: XCTestCase {
         try! mainReader.readNext(2)
         let next = try! mainReader.readNext(5)
         XCTAssert(next == "llo w".chars())
-        XCTAssert(mainReader.curr() == "o".char())
+        XCTAssert(try mainReader.curr() == "o".char())
     }
     
     func testReadNext_LessAvailable() {

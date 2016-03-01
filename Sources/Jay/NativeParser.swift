@@ -10,9 +10,14 @@
 
 struct NativeParser {
     
+    let opts: JayOpts
+    init(_ opts: JayOpts) {
+        self.opts = opts
+    }
+
     func parse(data: [UInt8]) throws -> Any {
         
-        let jsonValue = try Parser().parseJsonFromData(data)
+        let jsonValue = try Parser(self.opts).parseJsonFromData(data)
         
         //recursively convert into native types
         let native = jsonValue.toNative()

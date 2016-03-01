@@ -8,14 +8,24 @@
 
 struct RootParser: JsonParser {
     
+    let opts: JayOpts
+    init(_ opts: JayOpts) {
+        self.opts = opts
+    }
+
     func parse(withReader r: Reader) throws -> (JsonValue, Reader) {
         
         var reader = try self.prepareForReading(withReader: r)
+
+        //only allow fragments if the option was explicitly requested
+        if self.opts.allowFragments {
+            //in that case use the (any) value parser
+            return try ValueParser().parse(withReader: reader)
+        }
         
-        //the standard doesn't require handling of fragments, so here
-        //we'll assume we're only parsing valid structured types (object/array)
+        //otherwise only allow object or array as top object
         let root: JsonValue
-        switch reader.curr() {
+        switch try reader.curr() {
         case Const.BeginObject:
             (root, reader) = try ObjectParser().parse(withReader: reader)
         case Const.BeginArray:

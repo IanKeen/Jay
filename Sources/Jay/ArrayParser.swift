@@ -13,7 +13,7 @@ struct ArrayParser: JsonParser {
         var reader = try self.prepareForReading(withReader: r)
         
         //detect opening bracket
-        guard reader.curr() == Const.BeginArray else {
+        guard try reader.curr() == Const.BeginArray else {
             throw Error.UnexpectedCharacter(reader)
         }
         try reader.nextAndCheckNotDone()
@@ -22,7 +22,7 @@ struct ArrayParser: JsonParser {
         reader = try self.prepareForReading(withReader: reader)
         
         //check curr value for closing bracket, to handle empty array
-        if reader.curr() == Const.EndArray {
+        if try reader.curr() == Const.EndArray {
             //empty array
             reader.next()
             return (JsonValue.Array([]), reader)
@@ -40,7 +40,7 @@ struct ArrayParser: JsonParser {
             //scan for either a comma, in which case there must be another
             //value OR for a closing bracket
             reader = try self.prepareForReading(withReader: reader)
-            switch reader.curr() {
+            switch try reader.curr() {
             case Const.EndArray: reader.next(); return (JsonValue.Array(values), reader)
             case Const.ValueSeparator: reader.next(); break //comma, so another value must come. let the loop repeat.
             default: throw Error.UnexpectedCharacter(reader)

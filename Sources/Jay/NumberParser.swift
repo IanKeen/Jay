@@ -36,14 +36,18 @@ struct NumberParser: JsonParser {
         // - if it's 1...9, continue to parsing integer part first
         let integer: Int
         let frac: Int
-        if reader.curr() == Const.Zero {
+        if try reader.curr() == Const.Zero {
+            
+            if reader.isDoneAndFragmentsAllowed() {
+                return (JsonValue.Number(JsonNumber.JsonInt(0)), reader)
+            }
             try reader.nextAndCheckNotDone()
             
             //no int part means 0
             integer = 0
             
             //now if any number terminator is here, finish up with 0
-            if Const.NumberTerminators.contains(reader.curr()) {
+            if Const.NumberTerminators.contains(try reader.curr()) {
                 return (JsonValue.Number(JsonNumber.JsonInt(0)), reader)
             }
             
@@ -52,8 +56,11 @@ struct NumberParser: JsonParser {
         } else {
             //parse int part
             (integer, reader) = try self.parseInt(reader)
+            if reader.isDoneAndFragmentsAllowed() {
+                return (JsonValue.Number(JsonNumber.JsonInt(integer)), reader)
+            }
             //check whether we have a frac part
-            if reader.curr() == Const.DecimalPoint {
+            if try reader.curr() == Const.DecimalPoint {
                 (frac, reader) = try self.parseFrac(reader)
             } else {
                 frac = 0
@@ -104,7 +111,7 @@ struct NumberParser: JsonParser {
     
     private func parseMinus(r: Reader) throws -> (Bool, Reader) {
         var reader = r
-        if reader.curr() == Const.Minus {
+        if try reader.curr() == Const.Minus {
             try reader.nextAndCheckNotDone()
             return (true, reader)
         }
@@ -118,10 +125,10 @@ struct NumberParser: JsonParser {
         
         //take first digit, which can only be 1...9
         var digits = Const.Digits1to9
-        guard digits.contains(reader.curr()) else {
+        guard digits.contains(try reader.curr()) else {
             throw Error.NumberParsingFailed(reader)
         }
-        digs.append(reader.curr())
+        digs.append(try reader.curr())
         try reader.nextAndCheckNotDone()
         
         digits = Const.Digits0to9
@@ -138,15 +145,15 @@ struct NumberParser: JsonParser {
         while true {
             
             //look for allowed int digits
-            if digits.contains(reader.curr()) {
-                digs.append(reader.curr())
+            if digits.contains(try reader.curr()) {
+                digs.append(try reader.curr())
                 try reader.nextAndCheckNotDone()
                 continue
             }
             
             //look for other number-allowed chars in this context
             //although int-section terminating
-            if intTerm.contains(reader.curr()) {
+            if intTerm.contains(try reader.curr()) {
                 //gracefully end this section
                 let intString = try digs.string()
                 let int = Int(intString)!
@@ -163,7 +170,7 @@ struct NumberParser: JsonParser {
         var reader = r
         
         //frac part MUST start with decimal point!
-        guard reader.curr() == Const.DecimalPoint else {
+        guard try reader.curr() == Const.DecimalPoint else {
             throw Error.NumberParsingFailed(reader)
         }
         try reader.nextAndCheckNotDone()
@@ -171,10 +178,10 @@ struct NumberParser: JsonParser {
         var digs = [JChar]()
         
         //at least one digit 0...9 must follow
-        guard Const.Digits0to9.contains(reader.curr()) else {
+        guard Const.Digits0to9.contains(try reader.curr()) else {
             throw Error.NumberParsingFailed(reader)
         }
-        digs.append(reader.curr())
+        digs.append(try reader.curr())
         try reader.nextAndCheckNotDone()
         
         //once we're detecting the frac-section,
@@ -187,15 +194,15 @@ struct NumberParser: JsonParser {
         //now read in a loop
         while true {
             
-            if Const.Digits0to9.contains(reader.curr()) {
-                digs.append(reader.curr())
+            if Const.Digits0to9.contains(try reader.curr()) {
+                digs.append(try reader.curr())
                 try reader.nextAndCheckNotDone()
                 continue
             }
             
             //look for other number-allowed chars in this context
             //although frac-section terminating
-            if fracTerm.contains(reader.curr()) {
+            if fracTerm.contains(try reader.curr()) {
                 //gracefully end this section
                 let fracString = try digs.string()
                 let frac = Int(fracString)!
@@ -213,17 +220,17 @@ struct NumberParser: JsonParser {
         
         //exp part MUST start with e/E
         //otherwise it isn't there
-        guard Const.Exponent.contains(reader.curr()) else {
+        guard Const.Exponent.contains(try reader.curr()) else {
             return (nil, reader)
         }
         try reader.nextAndCheckNotDone()
         
         var sign = 1
         //optionally there can be a sign: + or -
-        if Set<JChar>([Const.Plus, Const.Minus]).contains(reader.curr()) {
+        if Set<JChar>([Const.Plus, Const.Minus]).contains(try reader.curr()) {
             //found a sign, if it's plus, there's nothing to do,
             //if it's minus, change out sign var
-            if reader.curr() == Const.Minus {
+            if try reader.curr() == Const.Minus {
                 sign = -1
             }
             try reader.nextAndCheckNotDone()
@@ -232,10 +239,10 @@ struct NumberParser: JsonParser {
         var digs = [JChar]()
         
         //at least one digit 1...9 must follow
-        guard Const.Digits1to9.contains(reader.curr()) else {
+        guard Const.Digits1to9.contains(try reader.curr()) else {
             throw Error.NumberParsingFailed(reader)
         }
-        digs.append(reader.curr())
+        digs.append(try reader.curr())
         try reader.nextAndCheckNotDone()
         
         //once we're detecting the exp-section,
@@ -247,15 +254,15 @@ struct NumberParser: JsonParser {
         //now read in a loop
         while true {
             
-            if Const.Digits0to9.contains(reader.curr()) {
-                digs.append(reader.curr())
+            if Const.Digits0to9.contains(try reader.curr()) {
+                digs.append(try reader.curr())
                 try reader.nextAndCheckNotDone()
                 continue
             }
             
             //look for other number-allowed chars in this context
             //although exp-section terminating
-            if expTerm.contains(reader.curr()) {
+            if expTerm.contains(try reader.curr()) {
                 //gracefully end this section
                 let expString = try digs.string()
                 let exp = Int(expString)! * sign

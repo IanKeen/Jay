@@ -19,13 +19,13 @@ struct StringParser: JsonParser {
         var reader = try self.prepareForReading(withReader: r)
         
         //ensure we're starting with a quote
-        guard reader.curr() == Const.QuotationMark else {
+        guard try reader.curr() == Const.QuotationMark else {
             throw Error.UnexpectedCharacter(reader)
         }
         try reader.nextAndCheckNotDone()
         
         //if another quote, it's just an empty string
-        if reader.curr() == Const.QuotationMark {
+        if try reader.curr() == Const.QuotationMark {
             return (JsonValue.String(""), reader)
         }
         
@@ -41,7 +41,7 @@ struct StringParser: JsonParser {
         var reader = r
         while true {
             
-            switch reader.curr() {
+            switch try reader.curr() {
                 
             case 0x00...0x1F:
                 //unescaped control chars, invalid
@@ -49,7 +49,7 @@ struct StringParser: JsonParser {
                 
             case Const.QuotationMark:
                 //end of string, return what we have
-                try reader.nextAndCheckNotDone()
+                try reader.nextAndCheckNotDoneIfFragmentsDisallowed()
                 return (str, reader)
                 
             case Const.Escape:
@@ -85,7 +85,7 @@ struct StringParser: JsonParser {
         
         while buffer.count < 4 {
             
-            buffer.append(reader.curr())
+            buffer.append(try reader.curr())
             var gen = buffer.generate()
             
             var utf = UTF8()
@@ -121,21 +121,21 @@ struct StringParser: JsonParser {
         var reader = r
         
         //this MUST start with escape
-        guard reader.curr() == Const.Escape else {
+        guard try reader.curr() == Const.Escape else {
             throw Error.InvalidEscape(reader)
         }
         try reader.nextAndCheckNotDone()
         
         //first check for the set escapable chars
-        if Const.Escaped.contains(reader.curr()) {
+        if Const.Escaped.contains(try reader.curr()) {
             
             let char: JChar
-            if let replacement = Const.EscapingRules[reader.curr()] {
+            if let replacement = Const.EscapingRules[try reader.curr()] {
                 //rule based, replace properly
                 char = replacement
             } else {
                 //we encountered one of the simple escapable characters, just add it
-                char = reader.curr()
+                char = try reader.curr()
             }
             
             let uniScalar = UnicodeScalar(char)
@@ -144,7 +144,7 @@ struct StringParser: JsonParser {
         }
         
         //now the char must be 'u', otherwise this is invalid escaping
-        guard reader.curr() == Const.UnicodeStart else {
+        guard try reader.curr() == Const.UnicodeStart else {
             throw Error.InvalidEscape(reader)
         }
         
@@ -180,7 +180,7 @@ struct StringParser: JsonParser {
         guard UTF16.isLeadSurrogate(value) else { return nil }
         
         //this MUST start with escape - the low surrogate
-        guard reader.curr() == Const.Escape else {
+        guard try reader.curr() == Const.Escape else {
             throw Error.InvalidEscape(reader)
         }
         try reader.nextAndCheckNotDone()

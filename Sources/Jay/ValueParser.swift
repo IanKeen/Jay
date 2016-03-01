@@ -13,7 +13,7 @@ struct ValueParser: JsonParser {
         var reader = try self.prepareForReading(withReader: r)
         
         let parser: JsonParser
-        switch reader.curr() {
+        switch try reader.curr() {
         case let x where StartChars.Object.contains(x):
             parser = ObjectParser()
         case let x where StartChars.Array.contains(x):

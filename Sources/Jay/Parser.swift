@@ -8,14 +8,19 @@
 
 struct Parser {
     
+    let opts: JayOpts
+    init(_ opts: JayOpts) {
+        self.opts = opts
+    }
+    
     //assuming data [Int8]
     func parseJsonFromData(data: [JChar]) throws -> JsonValue {
         
         //create a reader for this data
-        let reader = ByteReader(content: data)
+        let reader = ByteReader(content: data, opts: self.opts)
         
         //delegate parsing
-        let result = try RootParser().parse(withReader: reader)
+        let result = try RootParser(self.opts).parse(withReader: reader)
         let json = result.0
         var endReader = result.1
         

@@ -8,16 +8,34 @@
 
 //Implemented from scratch based on http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf and https://www.ietf.org/rfc/rfc4627.txt
 
+public struct JayOpts {
+    
+    //reading options
+    
+    /// Allows a non Array/Object value to be at the top level, as specified
+    /// in RFC7159. Disallowed by default.
+    let allowFragments: Bool
+    
+    //writing options
+    
+    init(allowFragments: Bool = false) {
+        self.allowFragments = allowFragments
+    }
+}
+
 public struct Jay {
     
-    public init() { }
+    let opts: JayOpts
+    
+    public init(_ opts: JayOpts = JayOpts()) {
+        self.opts = opts
+    }
     
     //Parses data into a dictionary [String: Any] or array [Any].
-    //Does not allow fragments. Test by conditional
-    //casting whether you received what you expected.
+    //Test by conditional casting whether you received what you expected.
     //Throws a descriptive error in case of any problem.
     public func jsonFromData(data: [UInt8]) throws -> Any {
-        return try NativeParser().parse(data)
+        return try NativeParser(self.opts).parse(data)
     }
     
     //Formats your JSON-compatible object into data or throws an error.
@@ -53,7 +71,7 @@ extension Jay {
     //manually unwrapping each value recursively. If you just want
     //Swift types with less type-information, use `jsonFromData()` above.
     public func typesafeJsonFromData(data: [UInt8]) throws -> JsonValue {
-        return try Parser().parseJsonFromData(data)
+        return try Parser(self.opts).parseJsonFromData(data)
     }
 
     //Formats your JSON-compatible object into data or throws an error.
